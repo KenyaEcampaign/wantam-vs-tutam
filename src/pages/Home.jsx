@@ -7,6 +7,10 @@ export default function Home() {
   const [visitors, setVisitors] = useState(0);
   const [supportAmount, setSupportAmount] = useState("");
 
+
+  const [approvedPayments, setApprovedPayments] = useState([]);
+const [slideIndex, setSlideIndex] = useState(0);
+
   const [mpesaCode, setMpesaCode] = useState("");
  const [selectedCandidate, setSelectedCandidate] = useState("");
 const [showPayment, setShowPayment] = useState(false);
@@ -140,6 +144,18 @@ function VoteButton({ label, color, onClick }) {
       .eq("option_name", "TUTAM");
   }, []);
 
+  const loadApprovedPayments = async () => {
+  const { data } = await supabase
+    .from("payment_submissions")
+    .select("*")
+    .eq("status", "approved")
+    .order("approved_at", {
+      ascending: false,
+    })
+    .limit(20);
+
+  setApprovedPayments(data || []);
+};
   // ----------------------------
   // VOTE (FIXED + SAFE REFRESH)
   // ----------------------------
@@ -175,6 +191,8 @@ function VoteButton({ label, color, onClick }) {
     loadVotes();
     loadVisitors();
     registerVisitor();
+    loadApprovedPayments();
+
 
     // REALTIME (ALL EVENTS FIXED)
     const channel = supabase
@@ -193,6 +211,7 @@ function VoteButton({ label, color, onClick }) {
     const interval = setInterval(() => {
       loadVotes();
       loadVisitors();
+      loadApprovedPayments();
     }, 5000);
 
     // countdown
@@ -217,6 +236,17 @@ function VoteButton({ label, color, onClick }) {
     };
   }, [loadVotes, loadVisitors, registerVisitor, syncVoteTotals]);
 
+  useEffect(() => {
+  if (approvedPayments.length === 0) return;
+
+  const slideTimer = setInterval(() => {
+    setSlideIndex((prev) =>
+      (prev + 1) % approvedPayments.length
+    );
+  }, 3000);
+
+  return () => clearInterval(slideTimer);
+}, [approvedPayments]);
   // ----------------------------
   // COMPUTED VALUES
   // ----------------------------
@@ -484,6 +514,80 @@ window.open(
 
     </div>
 
+<div
+  style={{
+    background: "#111",
+    color: "white",
+    marginTop: 20,
+    borderRadius: 10,
+    overflow: "hidden",
+    display: "flex",
+    alignItems: "center",
+    height: 55,
+  }}
+>
+  <div
+    style={{
+      background: "#d32f2f",
+      padding: "0 20px",
+      fontWeight: "bold",
+      height: "100%",
+      display: "flex",
+      alignItems: "center",
+      whiteSpace: "nowrap",
+    }}
+  >
+    LIVE VOTE FEED
+  </div>
+
+  <div
+    style={{
+      flex: 1,
+      overflow: "hidden",
+      whiteSpace: "nowrap",
+      position: "relative",
+    }}
+  >
+    <marquee
+      behavior="scroll"
+      direction="left"
+      scrollamount="6"
+    >
+      {approvedPayments.map((p) => (
+        <span
+          key={p.id}
+          style={{
+            marginRight: 80,
+            fontWeight: "bold",
+          }}
+        >
+          ✅ {p.votes} votes confirmed and added to{" "}
+          {p.candidate === "WANTAM"
+            ? "🇰🇪 WANTAM"
+            : "🔵 TUTAM"}
+          {" • "}
+          Ref: {p.payment_ref}
+        </span>
+      ))}
+    </marquee>
+  </div>
+</div>
+
+<div
+  style={{
+    background: "#0b3d2e",
+    color: "white",
+    padding: "12px",
+    marginTop: 15,
+    borderRadius: 10,
+    textAlign: "center",
+    fontWeight: "bold",
+    fontSize: 18,
+  }}
+>
+  🏆 WANTAM: {wantam} Votes | 🔵 TUTAM: {tutam} Votes |
+  🗳 Total: {totalVotes}
+</div>
     {/* RESULTS */}
     <div style={styles.resultsSection}>
 
