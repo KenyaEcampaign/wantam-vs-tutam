@@ -16,7 +16,8 @@ export default function AdminLogin() {
       return;
     }
 
-    window.location.href = "/admin/dashboard";
+   window.location.href =
+  window.location.origin + "/admin/dashboard";
   };
 
   return (
