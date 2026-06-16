@@ -7,6 +7,10 @@ export default function Home() {
   const [visitors, setVisitors] = useState(0);
   const [supportAmount, setSupportAmount] = useState("");
 
+  const [mpesaCode, setMpesaCode] = useState("");
+ const [selectedCandidate, setSelectedCandidate] = useState("");
+const [showPayment, setShowPayment] = useState(false);
+const [paymentRef, setPaymentRef] = useState("");
   const [timeLeft, setTimeLeft] = useState({
     days: 0,
     hours: 0,
@@ -368,6 +372,68 @@ function VoteButton({ label, color, onClick }) {
     borderRadius: "12px",
   },
 };
+
+const submitPayment = async () => {
+  if (!mpesaCode) {
+    alert("Enter M-Pesa Code");
+    return;
+  }
+
+  const { error } = await supabase
+    .from("payment_submissions")
+    .insert([
+      {
+        candidate: selectedCandidate,
+        amount: Number(supportAmount),
+        votes: Number(supportAmount),
+        mpesa_code: mpesaCode,
+        payment_ref: paymentRef,
+      },
+    ]);
+
+  if (error) {
+    alert("Failed to save payment");
+    return;
+  }
+
+  const candidateName =
+  selectedCandidate === "WANTAM"
+    ? "🇰🇪 WANTAM"
+    : "🔵 TUTAM";
+
+const message = `
+🇰🇪 KENYA eCAMPAIGN PAYMENT CONFIRMATION
+
+━━━━━━━━━━━━━━━
+
+📌 Candidate Supported:
+${candidateName}
+
+💰 Amount Paid:
+KSh ${supportAmount}
+
+🗳 Votes Purchased:
+${supportAmount}
+
+🔖 Reference Number:
+${paymentRef}
+
+📱 M-Pesa Code:
+${mpesaCode}
+
+━━━━━━━━━━━━━━━
+
+Please verify this payment and approve the votes.
+
+Thank you.
+`;
+window.open(
+  `https://wa.me/254721830380?text=${encodeURIComponent(message)}`,
+  "_blank"
+);
+
+  alert("Payment submitted successfully");
+};
   // ----------------------------
   // UI
   // ----------------------------
@@ -393,7 +459,7 @@ function VoteButton({ label, color, onClick }) {
     <div style={styles.grid}>
 
       <div style={styles.card}>
-        <h3>⏳ Countdown</h3>
+        <h3>⏳ COUNTDOWN TO 2027 ELECTIONS </h3>
         <h2 style={styles.bigText}>
           {timeLeft.days}d {timeLeft.hours}h {timeLeft.minutes}m {timeLeft.seconds}s
         </h2>
@@ -457,11 +523,79 @@ function VoteButton({ label, color, onClick }) {
 
     </div>
 
+<div style={styles.card}>
+  <h2>📢 Share Campaign</h2>
+
+  <button
+    onClick={() => {
+      navigator.clipboard.writeText(
+        window.location.href
+      );
+
+      alert("Link copied");
+    }}
+    style={styles.payBtn}
+  >
+    Copy Campaign Link
+  </button>
+</div>
     {/* SUPPORT */}
     <div style={styles.card}>
       <h2>💰 Mass Voting</h2>
       <p>1 Vote = 1 KSh</p>
 
+<h3>Select Candidate</h3>
+
+<div
+  style={{
+    display: "flex",
+    gap: "10px",
+    marginBottom: "15px",
+  }}
+>
+  <button
+    onClick={() => setSelectedCandidate("WANTAM")}
+    style={{
+      flex: 1,
+      padding: "12px",
+      background:
+        selectedCandidate === "WANTAM"
+          ? "#1b8f3a"
+          : "#ddd",
+      color:
+        selectedCandidate === "WANTAM"
+          ? "white"
+          : "black",
+      border: "none",
+      borderRadius: "8px",
+      cursor: "pointer",
+    }}
+  >
+    🇰🇪 WANTAM
+  </button>
+
+  <button
+    onClick={() => setSelectedCandidate("TUTAM")}
+    style={{
+      flex: 1,
+      padding: "12px",
+      background:
+        selectedCandidate === "TUTAM"
+          ? "#1e63ff"
+          : "#ddd",
+      color:
+        selectedCandidate === "TUTAM"
+          ? "white"
+          : "black",
+      border: "none",
+      borderRadius: "8px",
+      cursor: "pointer",
+    }}
+  >
+    🔵 TUTAM
+  </button>
+  
+</div>
       <input
         type="number"
         placeholder="Enter amount"
@@ -469,18 +603,193 @@ function VoteButton({ label, color, onClick }) {
         onChange={(e) => setSupportAmount(e.target.value)}
         style={styles.input}
       />
+<h3>
+  Estimated Votes: {supportAmount || 0}
+</h3>
+<button
+  style={styles.payBtn}
+  onClick={() => {
+    if (!supportAmount || Number(supportAmount) <= 0) {
+      alert("Please enter a valid amount.");
+      return;
+    }
 
-      <button
-        style={styles.payBtn}
-        onClick={() => {
-          if (!supportAmount || supportAmount <= 0) return;
-          alert(`You will pay KSh ${supportAmount} via M-Pesa Till 3554486`);
-        }}
-      >
-        Proceed to Pay
-      </button>
+    if (!selectedCandidate) {
+      alert("Select a candidate first");
+      return;
+    }
+
+    setPaymentRef(
+      "KEC-" +
+      Math.floor(
+        100000 + Math.random() * 900000
+      )
+    );
+
+    setShowPayment(true);
+  }}
+>
+  Proceed to Pay
+</button>
     </div>
 
+{showPayment && (
+  <div
+    style={{
+      position: "fixed",
+      top: 0,
+      left: 0,
+      width: "100%",
+      height: "100%",
+      background: "rgba(0,0,0,0.7)",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      zIndex: 9999,
+    }}
+  >
+    <div
+      style={{
+        background: "white",
+        width: "90%",
+        maxWidth: "600px",
+        borderRadius: "15px",
+        padding: "30px",
+        textAlign: "center",
+        color: "#111",
+      }}
+    >
+      <h1 style={{ color: "#0b3d2e" }}>
+        🇰🇪 Kenya eCampaign
+      </h1>
+
+      <h2>Mass Voting Payment</h2>
+<p>
+  <strong>Reference:</strong> {paymentRef}
+</p>
+      <p>You are supporting:</p>
+
+<h2>
+  {selectedCandidate === "WANTAM"
+    ? "🇰🇪 WANTAM"
+    : "🔵 TUTAM"}
+</h2>
+      <h1
+        style={{
+          color: "#1b8f3a",
+          margin: "15px 0",
+        }}
+      >
+        KSh {supportAmount}
+      </h1>
+
+      <p>
+        Complete payment using:
+      </p>
+
+      <div
+        style={{
+          background: "#f4f6f9",
+          padding: "20px",
+          borderRadius: "10px",
+          marginTop: "15px",
+        }}
+      >
+        <h3>📱 M-PESA</h3>
+
+        <p>
+          Buy Goods & Services
+        </p>
+
+        <h1
+          style={{
+            color: "#00a651",
+          }}
+        >
+          Till No. 3554486
+        </h1>
+        <button
+  onClick={() => {
+    navigator.clipboard.writeText(
+      "3554486"
+    );
+
+    alert("Till Number copied");
+  }}
+>
+  Copy Till Number
+</button>
+      </div>
+
+      <div
+        style={{
+          marginTop: "20px",
+          padding: "15px",
+          background: "#fff3cd",
+          borderRadius: "10px",
+          fontSize: "15px",
+        }}
+      >
+        After payment, your votes will be
+        verified and added to your selected
+        campaign option.
+      </div>
+
+      <div
+        style={{
+          display: "flex",
+          gap: "10px",
+          marginTop: "25px",
+          justifyContent: "center",
+        }}
+      >
+        <button
+          onClick={() => setShowPayment(false)}
+          style={{
+            padding: "12px 20px",
+            border: "none",
+            borderRadius: "8px",
+            cursor: "pointer",
+            background: "#ccc",
+          }}
+        >
+          Close
+        </button>
+
+ 
+
+  <input
+  type="text"
+  placeholder="Enter M-Pesa Code"
+  value={mpesaCode}
+  onChange={(e) => setMpesaCode(e.target.value)}
+  style={{
+    width: "100%",
+    padding: "12px",
+    marginTop: "15px",
+    borderRadius: "8px",
+    border: "1px solid #ccc",
+  }}
+/>
+
+       <button
+  onClick={submitPayment}
+  style={{
+    padding: "12px 20px",
+    border: "none",
+    borderRadius: "8px",
+    cursor: "pointer",
+    background: "#25D366",
+    color: "white",
+    fontWeight: "bold",
+  }}
+>
+  Submit Payment
+</button>
+      </div>
+    </div>
+  </div>
+)}
     {/* FOOTER */}
     <div style={styles.footer}>
       <h3>❤️ Support This Platform</h3>
